@@ -3251,190 +3251,193 @@ void Spell::DoSpellEffectHit(Unit* unit, uint8 effIndex, TargetInfo& hitInfo)
 
 uint32 Spell::prepare(SpellCastTargets const& targets, AuraEffect const* triggeredByAura)
 {
-    if (m_CastItem)
-    {
-        m_castItemGUID = m_CastItem->GetGUID();
-        m_castItemEntry = m_CastItem->GetEntry();
-    }
-    else
-    {
-        m_castItemGUID.Clear();
-        m_castItemEntry = ObjectGuid::Empty;
-    }
+	if (m_CastItem)
+	{
+		m_castItemGUID = m_CastItem->GetGUID();
+		m_castItemEntry = m_CastItem->GetEntry();
+	}
+	else
+	{
+		m_castItemGUID.Clear();
+		m_castItemEntry = ObjectGuid::Empty;
+	}
 
-    InitExplicitTargets(targets);
+	InitExplicitTargets(targets);
 
-    // Fill aura scaling information
-    if (Unit* caster = m_caster->ToUnit())
-    {
-        if (caster->IsControlledByPlayer() && !m_spellInfo->IsPassive() && m_spellInfo->SpellLevel && !m_spellInfo->IsChanneled() && !(_triggeredCastFlags & TRIGGERED_IGNORE_AURA_SCALING))
-        {
-            for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-            {
-                if (m_spellInfo->Effects[i].Effect == SPELL_EFFECT_APPLY_AURA)
-                {
-                    // Change aura with ranks only if basepoints are taken from spellInfo and aura is positive
-                    if (m_spellInfo->IsPositiveEffect(i))
-                    {
-                        m_auraScaleMask |= (1 << i);
-                        if (m_spellValue->EffectBasePoints[i] != m_spellInfo->Effects[i].BasePoints)
-                        {
-                            m_auraScaleMask = 0;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
+	// Fill aura scaling information
+	if (Unit* caster = m_caster->ToUnit())
+	{
+		if (caster->IsControlledByPlayer() && !m_spellInfo->IsPassive() && m_spellInfo->SpellLevel && !m_spellInfo->IsChanneled() && !(_triggeredCastFlags & TRIGGERED_IGNORE_AURA_SCALING))
+		{
+			for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+			{
+				if (m_spellInfo->Effects[i].Effect == SPELL_EFFECT_APPLY_AURA)
+				{
+					// Change aura with ranks only if basepoints are taken from spellInfo and aura is positive
+					if (m_spellInfo->IsPositiveEffect(i))
+					{
+						m_auraScaleMask |= (1 << i);
+						if (m_spellValue->EffectBasePoints[i] != m_spellInfo->Effects[i].BasePoints)
+						{
+							m_auraScaleMask = 0;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
 
-    m_spellState = SPELL_STATE_PREPARING;
-    //TC_LOG_DEBUG("FIXME","Spell %u - State : SPELL_STATE_PREPARING",m_spellInfo->Id);
-    //TC_LOG_DEBUG("FIXME","caster is %sin combat",(m_caster->IsInCombat()?"":"not "));
+	m_spellState = SPELL_STATE_PREPARING;
+	//TC_LOG_DEBUG("FIXME","Spell %u - State : SPELL_STATE_PREPARING",m_spellInfo->Id);
+	//TC_LOG_DEBUG("FIXME","caster is %sin combat",(m_caster->IsInCombat()?"":"not "));
 
-    m_caster->GetPosition(m_castPositionX, m_castPositionY, m_castPositionZ);
-    m_castOrientation = m_caster->GetOrientation();
+	m_caster->GetPosition(m_castPositionX, m_castPositionY, m_castPositionZ);
+	m_castOrientation = m_caster->GetOrientation();
 
-    if (triggeredByAura)
-        m_triggeredByAuraSpell = triggeredByAura->GetSpellInfo();
+	if (triggeredByAura)
+		m_triggeredByAuraSpell = triggeredByAura->GetSpellInfo();
 
-    // create and add update event for this spell
-    _spellEvent = new SpellEvent(this);
-    m_caster->m_Events.AddEvent(_spellEvent, m_caster->m_Events.CalculateTime(0)); //sun: changed from 1 to 0, no time should have passed
+	// create and add update event for this spell
+	_spellEvent = new SpellEvent(this);
+	m_caster->m_Events.AddEvent(_spellEvent, m_caster->m_Events.CalculateTime(0)); //sun: changed from 1 to 0, no time should have passed
 
-    //Another spell in progress ?
-    if(m_caster->ToUnit() && m_caster->ToUnit()->IsNonMeleeSpellCast(false, true, true, m_spellInfo->Id == 75) && m_cast_count && !(_triggeredCastFlags & TRIGGERED_IGNORE_CAST_IN_PROGRESS))
-    {
-        SendCastResult(SPELL_FAILED_SPELL_IN_PROGRESS);
-        finish(false,false);
-        return SPELL_FAILED_SPELL_IN_PROGRESS;
-    }
-            
-    if (m_caster->ToUnit() && m_caster->ToUnit()->IsSpellDisabled(m_spellInfo->Id))
-    {
-        SendCastResult(SPELL_FAILED_SPELL_UNAVAILABLE);
-        finish(false,false);
-        return SPELL_FAILED_SPELL_UNAVAILABLE;
-    }
+	//Another spell in progress ?
+	if (m_caster->ToUnit() && m_caster->ToUnit()->IsNonMeleeSpellCast(false, true, true, m_spellInfo->Id == 75) && m_cast_count && !(_triggeredCastFlags & TRIGGERED_IGNORE_CAST_IN_PROGRESS))
+	{
+		SendCastResult(SPELL_FAILED_SPELL_IN_PROGRESS);
+		finish(false, false);
+		return SPELL_FAILED_SPELL_IN_PROGRESS;
+	}
 
-    LoadScripts();
+	if (m_caster->ToUnit() && m_caster->ToUnit()->IsSpellDisabled(m_spellInfo->Id))
+	{
+		SendCastResult(SPELL_FAILED_SPELL_UNAVAILABLE);
+		finish(false, false);
+		return SPELL_FAILED_SPELL_UNAVAILABLE;
+	}
 
-    // Fill cost data (do not use power for item casts)
-    m_powerCost = m_CastItem ? 0 : m_spellInfo->CalcPowerCost(m_caster, m_spellSchoolMask, this);
+	LoadScripts();
 
-    // Set combo point requirement
-    if ((_triggeredCastFlags & TRIGGERED_IGNORE_COMBO_POINTS) || m_CastItem)
-        m_needComboPoints = false;
+	// Fill cost data (do not use power for item casts)
+	m_powerCost = m_CastItem ? 0 : m_spellInfo->CalcPowerCost(m_caster, m_spellSchoolMask, this);
 
-    uint32 param1 = 0, param2 = 0;
-    SpellCastResult result = CheckCast(true, &param1, &param2);
-    //TC_LOG_DEBUG("FIXME","CheckCast for %u : %u", m_spellInfo->Id, result);
-    if(result != SPELL_CAST_OK && !IsAutoRepeat()) //always cast autorepeat dummy for triggering
-    {
-        // Periodic auras should be interrupted when aura triggers a spell which can't be cast
-        // for example bladestorm aura should be removed on disarm as of patch 3.3.5
-        // channeled periodic spells should be affected by this (arcane missiles, penance, etc)
-        // a possible alternative sollution for those would be validating aura target on unit state change
-        if (triggeredByAura && triggeredByAura->IsPeriodic() && !triggeredByAura->GetBase()->IsPassive())
-        {
-            SendChannelUpdate(0);
-            triggeredByAura->GetBase()->SetDuration(0);
-        }
+	// Set combo point requirement
+	if ((_triggeredCastFlags & TRIGGERED_IGNORE_COMBO_POINTS) || m_CastItem)
+		m_needComboPoints = false;
 
-        if (param1 || param2)
-            SendCastResult(result, &param1, &param2);
-        else
-            SendCastResult(result);
+	uint32 param1 = 0, param2 = 0;
+	SpellCastResult result = CheckCast(true, &param1, &param2);
+	//TC_LOG_DEBUG("FIXME","CheckCast for %u : %u", m_spellInfo->Id, result);
+	if (result != SPELL_CAST_OK && !IsAutoRepeat()) //always cast autorepeat dummy for triggering
+	{
+		// Periodic auras should be interrupted when aura triggers a spell which can't be cast
+		// for example bladestorm aura should be removed on disarm as of patch 3.3.5
+		// channeled periodic spells should be affected by this (arcane missiles, penance, etc)
+		// a possible alternative sollution for those would be validating aura target on unit state change
+		if (triggeredByAura && triggeredByAura->IsPeriodic() && !triggeredByAura->GetBase()->IsPassive())
+		{
+			SendChannelUpdate(0);
+			triggeredByAura->GetBase()->SetDuration(0);
+		}
 
-        finish(false);
-        return result;
-    }
+		if (param1 || param2)
+			SendCastResult(result, &param1, &param2);
+		else
+			SendCastResult(result);
 
-    // Prepare data for triggers
-    prepareDataForTriggerSystem();
+		finish(false);
+		return result;
+	}
 
-    // calculate cast time (calculated after first CheckCast to prevent charge counting for first CheckCast fail)
-    m_casttime = m_spellInfo->CalcCastTime(this);
+	// Prepare data for triggers
+	prepareDataForTriggerSystem();
 
-    // Set cast time to 0 if .cheat casttime is enabled.
+	// calculate cast time (calculated after first CheckCast to prevent charge counting for first CheckCast fail)
+	m_casttime = m_spellInfo->CalcCastTime(this);
 
-    if (m_caster->GetTypeId() == TYPEID_PLAYER)
-    {
-        if (m_caster->ToPlayer()->GetCommandStatus(CHEAT_CASTTIME))
-            m_casttime = 0;
-    }
+	// Set cast time to 0 if .cheat casttime is enabled.
 
-    // don't allow channeled spells / spells with cast time to be casted while moving
-    // (even if they are interrupted on moving, spells with almost immediate effect get to have their effect processed before movement interrupter kicks in)
-    if ((m_spellInfo->IsChanneled() || m_casttime) && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->ToPlayer()->isMoving() && m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT && !IsTriggered())
-    {
-        // 1. Has casttime, 2. Or doesn't have flag to allow movement during channel
-        if (m_casttime || !m_spellInfo->IsMoveAllowedChannel())
-        {
-            SendCastResult(SPELL_FAILED_MOVING);
-            finish(false);
-            return SPELL_FAILED_MOVING;
-        }
-    }
+	if (m_caster->GetTypeId() == TYPEID_PLAYER)
+	{
+		if (m_caster->ToPlayer()->GetCommandStatus(CHEAT_CASTTIME))
+			m_casttime = 0;
+	}
 
-    // sunwell: if spell have nearby target entry only, do not allow to cast if no targets are found
-    if (m_CastItem)
-    {
-        bool selectTargets = false;
-        for (uint8 i = EFFECT_0; i < MAX_SPELL_EFFECTS; ++i)
-        {
-            if (!m_spellInfo->Effects[i].IsEffect())
-                continue;
+	// don't allow channeled spells / spells with cast time to be casted while moving
+	// (even if they are interrupted on moving, spells with almost immediate effect get to have their effect processed before movement interrupter kicks in)
+	if ((m_spellInfo->IsChanneled() || m_casttime) && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->ToPlayer()->isMoving() && m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT && !IsTriggered())
+	{
+		// 1. Has casttime, 2. Or doesn't have flag to allow movement during channel
+		if (m_casttime || !m_spellInfo->IsMoveAllowedChannel())
+		{
+			SendCastResult(SPELL_FAILED_MOVING);
+			finish(false);
+			return SPELL_FAILED_MOVING;
+		}
+	}
 
-            if (m_spellInfo->Effects[i].TargetA.GetSelectionCategory() != TARGET_SELECT_CATEGORY_NEARBY || m_spellInfo->Effects[i].TargetA.GetCheckType() != TARGET_CHECK_ENTRY)
-            {
-                selectTargets = false;
-                break;
-            }
+	// sunwell: if spell have nearby target entry only, do not allow to cast if no targets are found
+	if (m_CastItem)
+	{
+		bool selectTargets = false;
+		for (uint8 i = EFFECT_0; i < MAX_SPELL_EFFECTS; ++i)
+		{
+			if (!m_spellInfo->Effects[i].IsEffect())
+				continue;
 
-            // sunwell: by default set it to false, and to true if any valid target is found
-            selectTargets = true;
-        }
+			if (m_spellInfo->Effects[i].TargetA.GetSelectionCategory() != TARGET_SELECT_CATEGORY_NEARBY || m_spellInfo->Effects[i].TargetA.GetCheckType() != TARGET_CHECK_ENTRY)
+			{
+				selectTargets = false;
+				break;
+			}
 
-        if (selectTargets)
-        {
-            SelectSpellTargets();
-            _spellTargetsSelected = true;
+			// sunwell: by default set it to false, and to true if any valid target is found
+			selectTargets = true;
+		}
 
-            if (m_UniqueTargetInfo.empty() && m_UniqueGOTargetInfo.empty())
-            {
-                SendCastResult(SPELL_FAILED_CASTER_AURASTATE);
-                finish(false);
-                return SPELL_FAILED_CASTER_AURASTATE;
-            }
-        }
-    }
+		if (selectTargets)
+		{
+			SelectSpellTargets();
+			_spellTargetsSelected = true;
+
+			if (m_UniqueTargetInfo.empty() && m_UniqueGOTargetInfo.empty())
+			{
+				SendCastResult(SPELL_FAILED_CASTER_AURASTATE);
+				finish(false);
+				return SPELL_FAILED_CASTER_AURASTATE;
+			}
+		}
+	}
 
 
-    // focus if not controlled creature
-    if (m_caster->GetTypeId() == TYPEID_UNIT && !m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED))
-    {
-        if (!(m_spellInfo->IsNextMeleeSwingSpell() || IsAutoRepeat()))
-        {
-            if (m_targets.GetObjectTarget() && m_caster != m_targets.GetObjectTarget())
-                m_caster->ToCreature()->FocusTarget(this, m_targets.GetObjectTarget());
-            else if (m_spellInfo->HasAttribute(SPELL_ATTR5_DONT_TURN_DURING_CAST))
-                m_caster->ToCreature()->FocusTarget(this, nullptr);
-        }
-    }
+	// focus if not controlled creature
+	if (m_caster->GetTypeId() == TYPEID_UNIT && !m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED))
+	{
+		if (!(m_spellInfo->IsNextMeleeSwingSpell() || IsAutoRepeat()))
+		{
+			if (m_targets.GetObjectTarget() && m_caster != m_targets.GetObjectTarget())
+				m_caster->ToCreature()->FocusTarget(this, m_targets.GetObjectTarget());
+			else if (m_spellInfo->HasAttribute(SPELL_ATTR5_DONT_TURN_DURING_CAST))
+				m_caster->ToCreature()->FocusTarget(this, nullptr);
+		}
+	}
 
-    // set timer base at cast time
-    ReSetTimer();
+	// set timer base at cast time
+	ReSetTimer();
 
-    if (GetCaster())
-        if (Player *tmpPlayer = GetCaster()->ToPlayer())
-            if (tmpPlayer->HaveSpectators())
-            {
-                SpectatorAddonMsg msg;
-                msg.SetPlayer(tmpPlayer->GetName());
-                msg.CastSpell(m_spellInfo->Id, m_casttime);
-                tmpPlayer->SendSpectatorAddonMsgToBG(msg);
-            }
+	if (GetCaster())
+		if (Player *tmpPlayer = GetCaster()->ToPlayer())
+			if (tmpPlayer->HaveSpectators())
+			{
+				SpectatorAddonMsg msg;
+				msg.SetPlayer(tmpPlayer->GetName());
+				msg.CastSpell(m_spellInfo->Id, m_casttime);
+				tmpPlayer->SendSpectatorAddonMsgToBG(msg);
+			}
+
+	if (m_spellInfo->Id == 42292)
+		m_caster->ToPlayer()->SendGladdyNotification();
 
     CallScriptSpellStartHandlers();
 

@@ -1265,6 +1265,10 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void TextEmote(std::string const& text, WorldObject const* = nullptr, bool = false) override;
         /// Handles whispers from Addons and players based on sender, receiver's guid and language.
         void Whisper(std::string const& text, Language language, Player* receiver, bool = false) override;
+		void SendAddonMessage(std::string& text, char* prefix);
+		void BuildGladdyUpdate();
+		void SendGladdyNotification();
+
 
         /*********************************************************/
         /***                    STORAGE SYSTEM                 ***/

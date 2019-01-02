@@ -1225,6 +1225,10 @@ void Battleground::StartBattleground()
 
     if(m_IsRated) 
         TC_LOG_DEBUG("arena","Arena match type: %u for Team1Id: %u - Team2Id: %u started.", m_ArenaType, _arenaTeamIds[TEAM_ALLIANCE], _arenaTeamIds[TEAM_HORDE]);
+
+	for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
+		if (Player *plr = sObjectMgr->GetPlayerInfo(itr->first))
+			plr->BuildGladdyUpdate();
 }
 
 void Battleground::onAddSpectator(Player *spectator)

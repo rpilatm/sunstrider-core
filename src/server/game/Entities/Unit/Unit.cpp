@@ -7995,7 +7995,7 @@ DiminishingLevels Unit::GetDiminishing(DiminishingGroup group) const
         return DIMINISHING_LEVEL_1;
 
     // If last spell was cast more than 15 seconds ago - reset level
-    if (!diminish.stack && GetMSTimeDiffToNow(diminish.hitTime) > 15000)
+    if (!diminish.stack && GetMSTimeDiffToNow(diminish.hitTime) > 18000)
         return DIMINISHING_LEVEL_1;
 
     return DiminishingLevels(diminish.hitCount);

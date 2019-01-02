@@ -2180,7 +2180,7 @@ void AuraEffect::PeriodicDummyTick(AuraApplication* aurApp, Unit* caster, uint32
                 // on 1 tick - 166% (handled in 4 second)
                 // on 2 tick - 133% (handled in 6 second)
                 // Not need update after 4 tick
-                if (GetTickNumber() > 4)
+                /* if (GetTickNumber() > 4)
                     return;
                 // Apply bonus for 1 - 4 tick
                 switch (GetTickNumber())
@@ -2199,7 +2199,7 @@ void AuraEffect::PeriodicDummyTick(AuraApplication* aurApp, Unit* caster, uint32
                     break;
                 }
                 (m_target->ToPlayer())->UpdateManaRegen();
-                return;
+                return; */
             }
         }
         return;

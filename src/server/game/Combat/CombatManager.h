@@ -56,7 +56,7 @@ protected:
 // Please check Game/Combat/CombatManager.h for documentation on how this class works!
 struct TC_GAME_API PvPCombatReference : public CombatReference
 {
-    static const uint32 PVP_COMBAT_TIMEOUT = 5250; //sun custom value
+    static const uint32 PVP_COMBAT_TIMEOUT = 6000; //robert's change
 
     // suppressed combat refs do not generate a combat state for one side of the relation
     // (used by: vanish, feign death)

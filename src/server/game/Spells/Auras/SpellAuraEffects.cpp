@@ -2161,9 +2161,9 @@ void AuraEffect::PeriodicDummyTick(AuraApplication* aurApp, Unit* caster, uint32
         {
             if (i->GetId() == GetId())
             {
-                Battleground *bg = (m_target->ToPlayer())->GetBattleground();
-                if (!bg || !bg->IsArena())
-                {
+                //Battleground *bg = (m_target->ToPlayer())->GetBattleground();
+                //if (!bg || !bg->IsArena())
+                //{
                     // default case - not in arena
                     m_isPeriodic = false;
                     if (GetTickNumber() == 1)
@@ -2171,7 +2171,7 @@ void AuraEffect::PeriodicDummyTick(AuraApplication* aurApp, Unit* caster, uint32
 
                     (m_target->ToPlayer())->UpdateManaRegen();
                     return;
-                }
+               // }
                 //**********************************************/
                 // This feature uses only in arenas
                 //**********************************************/

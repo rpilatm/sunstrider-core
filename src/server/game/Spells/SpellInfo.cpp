@@ -924,17 +924,20 @@ void SpellInfo::_LoadSpellDiminishInfo()
         case SPELLFAMILY_ROGUE:
         {
             // Kidney Shot
-            if (SpellFamilyFlags & 0x00000200000LL)
-                return DIMINISHING_KIDNEYSHOT;
-            // Sap
-            else if (SpellFamilyFlags & 0x00000000080LL)
-                return DIMINISHING_POLYMORPH;
-            // Gouge
-            else if (SpellFamilyFlags & 0x00000000008LL)
-                return DIMINISHING_POLYMORPH;
-            // Blind
-            else if (SpellFamilyFlags & 0x00001000000LL)
-                return DIMINISHING_BLIND_CYCLONE;
+			if (SpellFamilyFlags & 0x00000200000LL)
+				return DIMINISHING_KIDNEYSHOT;
+			// Sap
+			else if (SpellFamilyFlags & 0x00000000080LL)
+				return DIMINISHING_POLYMORPH;
+			// Gouge
+			else if (SpellFamilyFlags & 0x00000000008LL)
+				return DIMINISHING_POLYMORPH;
+			// Blind
+			else if (SpellFamilyFlags & 0x00001000000LL)
+				return DIMINISHING_BLIND_CYCLONE;
+			// Garrote
+			else if (SpellFamilyFlags & 0x00000000100LL)
+				return DIMINISHING_GARROTE;
             break;
         }
         case SPELLFAMILY_HUNTER:
@@ -956,7 +959,7 @@ void SpellInfo::_LoadSpellDiminishInfo()
             //else if (SpellFamilyFlags & 0x40840000000LL)
             //    return DIMINISHING_WARLOCK_FEAR;
             // Curses/etc
-            if (SpellVisual == 339 && SpellIconID == 692) // Curse of Languages
+            if (SpellVisual == 339 && SpellIconID == 692) // Curse of Tongues
                 return DIMINISHING_LIMITONLY;
             else if (SpellFamilyFlags & 0x20000000000) // Curse of the Elements
                 return DIMINISHING_LIMITONLY;
@@ -1043,6 +1046,7 @@ void SpellInfo::_LoadSpellDiminishInfo()
         case DIMINISHING_BANISH:
         case DIMINISHING_WARLOCK_FEAR:
         case DIMINISHING_KNOCKOUT:
+		case DIMINISHING_GARROTE:
             return DRTYPE_PLAYER;
         }
 
